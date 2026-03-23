@@ -1,0 +1,250 @@
+# --- DASHBOARD CRYPTO PRO - MODULE GRADIENTS ---
+import requests, urllib3
+from flask import Flask, jsonify
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+app = Flask(__name__)
+
+@app.route('/api/macro')
+def macro_api():
+    return jsonify({
+        "fed": 3.64, "inf": 2.31, "dxy": 118.24, "fg": 9,
+        "news_top": "MARKET STRUCTURE • DECRYPT • 154-YEAR-OLD BANK TO OFFER CRYPTO • ",
+        "news_bot": "FED : 18 MARS 20:00 • EXPIRATION OPTIONS : 27 MARS • PROCHAIN CPI • "
+    })
+
+@app.route('/')
+def home():
+    return """
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        :root { 
+            --green: #00fa9a; --red: #ff4d4d; --yellow: #ffff00;
+            --bg: #000; --price-clr: #fcfaf2; --ui-grey: #222; 
+        }
+        body { 
+            background: var(--bg); color: white; 
+            font-family: -apple-system, system-ui, sans-serif; 
+            margin: 0; display: flex; justify-content: center; padding: 20px; 
+        }
+        .app { width: 380px; display: flex; flex-direction: column; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; }
+        .indicators { display: flex; gap: 12px; }
+        .ind { display: flex; flex-direction: column; align-items: center; width: 42px; position: relative; }
+        .halo { position: absolute; width: 22px; height: 22px; border-radius: 50%; top: -7px; filter: blur(8px); opacity: 0.8; z-index: 0; }
+        .dot { width: 7px; height: 7px; border-radius: 50%; background: #222; margin-bottom: 6px; z-index: 1; position: relative; }
+        .dot.g { background: var(--green); box-shadow: 0 0 10px var(--green); }
+        .dot.r { background: var(--red); box-shadow: 0 0 10px var(--red); }
+        .ind span { font-size: 8px; color: #888; font-weight: 900; }
+
+        .btn-group { display: flex; gap: 8px; }
+        .btn { background: #000; border: 1px solid var(--ui-grey); color: #555; border-radius: 10px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn.active { border-color: #fff !important; color: #fff !important; }
+        .btn-a { width: 55px; height: 29px; font-size: 11px; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 25px; }
+        .tab { flex: 1; height: 38px; font-size: 11px; }
+
+        .price-wrap { text-align: center; margin-bottom: 25px; position: relative; }
+        #price { font-size: 58px; font-weight: 500; color: var(--price-clr); letter-spacing: -1.2px; }
+        .symbol { position: absolute; font-size: 13px; color: #555; font-weight: 800; top: 12px; margin-left: 6px; }
+        #change { font-size: 18px; font-weight: 900; margin-top: -5px; }
+
+        .chart-box { width: 100%; height: 260px; background: #050505; border: 1px solid var(--ui-grey); border-radius: 35px; margin-bottom: 25px; overflow: hidden; }
+        canvas { width: 100%; height: 100%; }
+
+        .ticker-wrap { width: 100%; overflow: hidden; white-space: nowrap; margin-bottom: 2px; }
+        .ticker { display: inline-block; font-size: 9px; font-weight: 900; }
+        .t1 { color: #555; animation: scroll 160s linear infinite; }
+        .t2 { color: #7d5fff; animation: scroll 120s linear infinite; }
+        @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+        .macro-card { background: #060606; border: 1px solid #111; border-radius: 35px; padding: 22px 28px; }
+        .m-row { display: flex; align-items: center; margin-bottom: 6px; }
+        .m-lbl { width: 110px; color: #888; font-size: 11px; font-weight: 800; }
+        .m-val { flex-grow: 1; text-align: center; color: #eee; font-size: 14px; font-weight: 700; margin-right: 10px; }
+        .m-badge { width: 105px; border: 1px solid; border-radius: 8px; padding: 6px 0; font-size: 10px; font-weight: 900; text-align: center; }
+        .brd-r { border-color: var(--red); color: var(--red); }
+        .brd-g { border-color: var(--green); color: var(--green); }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="header">
+            <div class="indicators">
+                <div class="ind"><div class="halo" id="h1"></div><div id="d1" class="dot"></div><span>SCALP</span></div>
+                <div class="ind"><div class="halo" id="h2"></div><div id="d2" class="dot"></div><span>TREND</span></div>
+                <div class="ind"><div class="halo" id="h3"></div><div id="d3" class="dot"></div><span>SWING</span></div>
+            </div>
+            <div class="btn-group">
+                <div class="btn btn-a active" onclick="setAsset(this)">ETH</div>
+                <div class="btn btn-a" onclick="setAsset(this)">BTC</div>
+                <div class="btn btn-a" onclick="setAsset(this)">SOL</div>
+            </div>
+        </div>
+
+        <div class="price-wrap">
+            <span id="price">----</span><span class="symbol">(USDT)</span>
+            <div id="change">0.00%</div>
+        </div>
+
+        <div class="tabs">
+            <div class="btn tab active" onclick="setTab(this, '1m')">1MN</div>
+            <div class="btn tab" onclick="setTab(this, '15m')">15MN</div>
+            <div class="btn tab" onclick="setTab(this, '1h')">1HRE</div>
+        </div>
+
+        <div class="chart-box"><canvas id="chart"></canvas></div>
+        <div class="ticker-wrap"><div class="ticker t1" id="n1"></div></div>
+        <div class="ticker-wrap" style="margin-bottom:15px;"><div class="ticker t2" id="n2"></div></div>
+        <div class="macro-card" id="macro-list"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('chart'), ctx = canvas.getContext('2d');
+        let currentSymbol = "ETHUSDT", currentInterval = "1m";
+
+        function setAsset(el) {
+            document.querySelectorAll('.btn-a').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            currentSymbol = el.innerText + "USDT"; updateAll();
+        }
+
+        function setTab(el, interval) {
+            document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+            el.classList.add('active'); 
+            currentInterval = interval; updateAll();
+        }
+
+        async function updateIndicators() {
+            const periods = ['1m', '15m', '1h'];
+            for(let i=0; i<3; i++) {
+                try {
+                    const r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${currentSymbol}&interval=${periods[i]}&limit=2`);
+                    const data = await r.json();
+                    const bull = parseFloat(data[1][4]) >= parseFloat(data[0][4]);
+                    document.getElementById(`d${i+1}`).className = bull ? 'dot g' : 'dot r';
+                    document.getElementById(`h${i+1}`).style.background = bull ? '#00fa9a' : '#ff4d4d';
+                } catch(e){}
+            }
+        }
+
+        async function updateChart() {
+            try {
+                const r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${currentSymbol}&interval=${currentInterval}&limit=60`);
+                const data = await r.json();
+                const prices = data.map(d => parseFloat(d[4]));
+                const times = data.map(d => {
+                    let date = new Date(d[0]);
+                    return date.getHours() + ":" + date.getMinutes().toString().padStart(2, '0');
+                });
+                const last = prices[prices.length-1], first = prices[0], pct = ((last-first)/first)*100;
+
+                document.getElementById('price').innerText = last.toLocaleString('fr-FR', {minimumFractionDigits:2});
+                const c = document.getElementById('change');
+                c.innerText = (pct>=0?'+':'') + pct.toFixed(2) + '%';
+                c.style.color = pct>=0 ? '#00fa9a' : '#ff4d4d';
+                
+                draw(prices, times);
+            } catch(e){}
+        }
+
+        function draw(prices, times) {
+            canvas.width = canvas.clientWidth * 2; canvas.height = canvas.clientHeight * 2;
+            ctx.scale(2,2);
+            const w = canvas.clientWidth, h = canvas.clientHeight;
+            const min = Math.min(...prices), max = Math.max(...prices), range = (max - min) || 0.01;
+            const padR = 45, padT = 20, padB = 30, padL = 10;
+            const cW = w - padR - padL, cH = h - padT - padB;
+
+            ctx.clearRect(0,0,w,h);
+
+            // GRILLE
+            ctx.strokeStyle = "#252525"; ctx.lineWidth = 0.8;
+            ctx.fillStyle = "#aaa"; ctx.font = "9px sans-serif";
+            for(let i=0; i<=4; i++) {
+                const y = padT + (cH * (i/4));
+                ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + cW, y); ctx.stroke();
+                ctx.fillText((max - (range * (i/4))).toFixed(1), padL + cW + 8, y + 3);
+            }
+            for(let i=0; i<=3; i++) {
+                const idx = Math.floor((prices.length - 1) * (i/3));
+                const x = padL + (idx/(prices.length-1)) * cW;
+                ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + cH); ctx.stroke();
+                ctx.fillText(times[idx], x - 12, padT + cH + 15);
+            }
+
+            // 1. DÉGRADÉ SOUS COURBE (Gradients)
+            for(let i=1; i<prices.length; i++) {
+                const x1 = padL + ((i-1)/(prices.length-1)) * cW;
+                const y1 = padT + cH - ((prices[i-1]-min)/range * cH);
+                const x2 = padL + (i/(prices.length-1)) * cW;
+                const y2 = padT + cH - ((prices[i]-min)/range * cH);
+                
+                const color = prices[i] >= prices[i-1] ? "0, 250, 154" : "255, 77, 77";
+                
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.lineTo(x2, padT + cH);
+                ctx.lineTo(x1, padT + cH);
+                ctx.closePath();
+
+                const grad = ctx.createLinearGradient(0, y1, 0, padT + cH);
+                grad.addColorStop(0, `rgba(${color}, 0.3)`);
+                grad.addColorStop(1, `rgba(${color}, 0)`);
+                ctx.fillStyle = grad;
+                ctx.fill();
+            }
+
+            // 2. MOYENNE JAUNE (Toujours par-dessus le dégradé)
+            ctx.setLineDash([2, 2]);
+            ctx.strokeStyle = "#ffff00"; ctx.lineWidth = 1;
+            ctx.beginPath();
+            let sum = 0;
+            prices.forEach((p, i) => {
+                sum += p; const avg = sum / (i + 1);
+                const x = padL + (i/(prices.length-1)) * cW;
+                const y = padT + cH - ((avg-min)/range * cH);
+                if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+            });
+            ctx.stroke(); ctx.setLineDash([]);
+
+            // 3. COURBE PRIX (Trait fin au-dessus)
+            ctx.lineWidth = 1.6;
+            for(let i=1; i<prices.length; i++) {
+                ctx.strokeStyle = prices[i] >= prices[i-1] ? "#00fa9a" : "#ff4d4d";
+                ctx.beginPath();
+                const x1 = padL + ((i-1)/(prices.length-1)) * cW;
+                const y1 = padT + cH - ((prices[i-1]-min)/range * cH);
+                const x2 = padL + (i/(prices.length-1)) * cW;
+                const y2 = padT + cH - ((prices[i]-min)/range * cH);
+                ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+        }
+
+        async function loadMacro() {
+            const r = await fetch('/api/macro'); const d = await r.json();
+            document.getElementById('n1').innerText = (d.news_top + " • ").repeat(15);
+            document.getElementById('n2').innerText = (d.news_bot + " • ").repeat(15);
+            document.getElementById('macro-list').innerHTML = `
+                <div class="m-row"><span class="m-lbl">TAUX FED</span><span class="m-val">3.64%</span><div class="m-badge brd-r">RESTRICTIF</div></div>
+                <div class="m-row"><span class="m-lbl">INFLATION</span><span class="m-val">2.31%</span><div class="m-badge brd-r">CIBLE 2%</div></div>
+                <div class="m-row"><span class="m-lbl">INDEX USD</span><span class="m-val">118.24</span><div class="m-badge brd-g">REPLI</div></div>
+                <div class="m-row"><span class="m-lbl">SENTIMENT</span><span class="m-val">9/100</span><div class="m-badge brd-r">PEUR</div></div>`;
+        }
+
+        function updateAll() { updateChart(); updateIndicators(); }
+        setInterval(updateAll, 2000);
+        updateAll(); loadMacro();
+    </script>
+</body>
+</html>
+"""
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080)

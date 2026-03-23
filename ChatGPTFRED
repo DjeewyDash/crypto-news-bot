@@ -1,0 +1,76 @@
+from flask import Flask, render_template_string
+import requests
+
+FRED_API_KEY = "d1879a1777f86e152ea00b15846915fa"
+
+FED_SERIES = "FEDFUNDS"
+CPI_SERIES = "CPIAUCSL"
+
+app = Flask(__name__)
+
+HTML = """
+<!doctype html>
+<html>
+<head>
+<title>US Macro Dashboard</title>
+<meta http-equiv="refresh" content="60">
+<style>
+body {
+    background:#111;
+    color:#0f0;
+    font-family: Arial;
+    text-align:center;
+}
+.card {
+    border:1px solid #0f0;
+    padding:20px;
+    margin:20px;
+    display:inline-block;
+    min-width:250px;
+}
+.value {
+    font-size:48px;
+}
+</style>
+</head>
+<body>
+
+<h1>📊 US MACRO LIVE</h1>
+
+<div class="card">
+<h2>FED Rate</h2>
+<div class="value">{{ fed }}%</div>
+</div>
+
+<div class="card">
+<h2>CPI</h2>
+<div class="value">{{ cpi }}</div>
+</div>
+
+<p>Auto refresh every 60s</p>
+
+</body>
+</html>
+"""
+
+def get_latest(series):
+    url = "https://api.stlouisfed.org/fred/series/observations"
+    params = {
+        "series_id": series,
+        "api_key": FRED_API_KEY,
+        "file_type": "json",
+        "sort_order": "desc",
+        "limit": 1
+    }
+    r = requests.get(url, params=params).json()
+    return r["observations"][0]["value"]
+
+@app.route("/")
+def index():
+    fed = get_latest(FED_SERIES)
+    cpi = get_latest(CPI_SERIES)
+    return render_template_string(HTML, fed=fed, cpi=cpi)
+
+if __name__ == "__main__":
+    app.run(debug=True)
+

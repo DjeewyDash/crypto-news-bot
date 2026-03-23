@@ -1,0 +1,26 @@
+name: Update Crypto News
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Se lance toutes les heures
+  workflow_dispatch: # Permet de le lancer à la main pour tester
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: ambassadors/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install requests feedparser
+
+      - name: Run script
+        env:
+          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+        run: python t2.py
