@@ -6,7 +6,7 @@ import os  # Ajouté pour la sécurité
 
 # --- CONFIGURATION ---
 # On récupère le Token depuis le "coffre-fort" GitHub (Secret)
-GITHUB_TOKEN = os.getenv("MY_GITHUB_TOKEN")
+GITHUB_TOKEN = os.getenv('MY_GITHUB_TOKEN')
 GIST_ID = "03b9b5d1579579f627c06470c1e279e8"
 
 RSS_SOURCES = [
