@@ -34,7 +34,7 @@ def get_clean_news():
                     icon = "🚨" if any(word in title_lower for word in alerts) else "🗞️"
                     
                     # News cliquable
-                    news_content = f"<a href='{entry.link}' target='_blank' style='color: white; text-decoration: none;'>{icon}  {clean_title} 🔗 <u>{source['name']}</u> </a>"
+                    news_content = f"<a href='{entry.link}' target='_blank' style='color: #CC6600; text-decoration: none;'>{icon}  {clean_title} 🔗 <u>{source['name']}</u> </a>"
                     
                     news_obj = {"content": news_content}
                     if any(asset in title_lower for asset in assets):
