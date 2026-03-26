@@ -32,7 +32,7 @@ def get_clean_news():
                 feed = feedparser.parse(response.content)
                 # On prend les 5 plus récentes de CHAQUE source pour garantir le mélange
                 for entry in feed.entries[:5]:
-                    title_clean = entry.title.replace("'", " ").replace('"', " ")
+                    title_clean = entry.title.replace("'", " ").replace('"', " ").upper()
                     icon = "🗞️"
                     # Couleur que nous avons fixée ensemble
                     news_content = f"<a href='{entry.link}' target='_blank' style='color: #CC6600; text-decoration: none;'>{icon}  {title_clean} 🔗 <u>{source['name']}</u> </a>"
