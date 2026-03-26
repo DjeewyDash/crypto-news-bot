@@ -27,7 +27,7 @@ def get_clean_news():
         try:
             # On simule un vrai navigateur pour ne pas être bloqué par Coindesk/News
             headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
-            response = requests.get(source["url"], headers=headers, timeout=15)
+            response = requests.get(source["url"], headers=headers, timeout=5)
             if response.status_code == 200:
                 feed = feedparser.parse(response.content)
                 # On prend les 5 plus récentes de CHAQUE source pour garantir le mélange
