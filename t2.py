@@ -18,36 +18,38 @@ RSS_SOURCES = [
 assets = ["btc", "eth", "sol", "bitcoin", "ethereum", "solana"]
 alerts = ["crash", "surge", "plunge", "breakout", "ath", "sec", "fed", "etf", "pump", "dump", "urgent"]
 
+
+#==========DEBUT NEWS=========
+
 def get_clean_news():
-    filtered_news = []
-    fallback_news = []
+    all_news = []
     for source in RSS_SOURCES:
         try:
-            headers = {"User-Agent": "Mozilla/5.0"}
-            response = requests.get(source["url"], headers=headers, timeout=10)
+            # On simule un vrai navigateur pour ne pas être bloqué par Coindesk/News
+            headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
+            response = requests.get(source["url"], headers=headers, timeout=15)
             if response.status_code == 200:
                 feed = feedparser.parse(response.content)
-                for entry in feed.entries:
-                    title_original = entry.title
-                    title_lower = title_original.lower()
-                    clean_title = re.sub(r'<!\[CDATA\[|\]\]>|<.*?>', '', title_original).strip().upper()
-                    icon = "🚨" if any(word in title_lower for word in alerts) else "🗞️"
-                    
-                    # News cliquable
-                    news_content = f"<a href='{entry.link}' target='_blank' style='color: #CC6600; text-decoration: none;'>{icon}  {clean_title} 🔗 <u>{source['name']}</u> </a>"
-                    
-                    news_obj = {"content": news_content}
-                    if any(asset in title_lower for asset in assets):
-                        filtered_news.append(news_obj)
-                    else:
-                        fallback_news.append(news_obj)
-        except: pass
+                # On prend les 5 plus récentes de CHAQUE source pour garantir le mélange
+                for entry in feed.entries[:5]:
+                    title_clean = entry.title.replace("'", " ").replace('"', " ")
+                    icon = "🗞️"
+                    # Couleur que nous avons fixée ensemble
+                    news_content = f"<a href='{entry.link}' target='_blank' style='color: #CC6600; text-decoration: none;'>{icon}  {title_clean} 🔗 <u>{source['name']}</u> </a>"
+                    all_news.append(news_content)
+        except: 
+            continue
 
-    final_list = filtered_news[:12] if filtered_news else fallback_news[:8]
-    if not final_list:
+    if not all_news:
         return "🗞️  MARKET DATA STABLE "
 
-    return "".join([item['content'] for item in final_list])
+    # On mélange un peu pour ne pas avoir 5 fois le même site d'affilée
+    import random
+    random.shuffle(all_news)
+    
+    return " ".join(all_news[:15]) # On en garde 15 pour le défilement
+
+#=========FIN NEWS==========
 
 def update_gist(content):
     if not GITHUB_TOKEN:
