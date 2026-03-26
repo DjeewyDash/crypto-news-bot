@@ -25,7 +25,7 @@ def get_clean_news():
     all_news = []
     for source in RSS_SOURCES:
         try:
-            # On simule un vrai navigateur pour ne pas être bloqué par Coindesk/News
+            # On simule un vrai navigateur pour ne pas être bloqué
             headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"}
             response = requests.get(source["url"], headers=headers, timeout=5)
             if response.status_code == 200:
@@ -34,10 +34,12 @@ def get_clean_news():
                 for entry in feed.entries[:5]:
                     title_clean = entry.title.replace("'", " ").replace('"', " ").upper()
                     icon = "🗞️"
-                    # Couleur que nous avons fixée ensemble
-                    news_content = f"<a href='{entry.link}' target='_blank' style='color: #CC6600; text-decoration: none;'>{icon}  {title_clean} 🔗 <u>{source['name']}</u> </a>"
+                    
+                    # Version finale : Orange sombre, pas de lien, pas de souligné, pas de symbole chaîne
+                    news_content = f"<span style='color: #CC6600;'>{icon}  {title_clean} - {source['name']} </span>"
+                    
                     all_news.append(news_content)
-        except: 
+        except:
             continue
 
     if not all_news:
@@ -46,7 +48,7 @@ def get_clean_news():
     # On mélange un peu pour ne pas avoir 5 fois le même site d'affilée
     import random
     random.shuffle(all_news)
-    
+
     return " ".join(all_news[:15]) # On en garde 15 pour le défilement
 
 #=========FIN NEWS==========
@@ -60,7 +62,7 @@ def update_gist(content):
     headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
     data = {"files": {"news_crypto.txt": {"content": content}}}
     response = requests.patch(url, headers=headers, data=json.dumps(data))
-    
+
     if response.status_code == 200:
         print("✅ Gist mis à jour avec succès !")
     else:
