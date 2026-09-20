@@ -17,12 +17,19 @@ RSS_CRYPTO = [
     {"name": "CRYPTOSLATE", "url": "https://cryptoslate.com/feed/"}
 ]
 
-# --- LIGNE 2 : ACTUALITÉS MARCHÉS & MONDE ---
-# Google News - édition française
+# --- LIGNE 2 : ACTUALITÉS MARCHÉS & MONDE FR ---
 RSS_MARKETS_FR = [
     {
         "name": "GOOGLE NEWS",
         "url": "https://news.google.com/rss/search?q=(march%C3%A9s%20OR%20bourse%20OR%20%C3%A9conomie%20OR%20inflation%20OR%20Fed%20OR%20BCE%20OR%20g%C3%A9opolitique%20OR%20p%C3%A9trole)%20when%3A1h&hl=fr&gl=FR&ceid=FR:fr"
+    }
+]
+
+# --- LIGNE 2 : MARKET & WORLD NEWS EN ---
+RSS_MARKETS_EN = [
+    {
+        "name": "GOOGLE NEWS",
+        "url": "https://news.google.com/rss/search?q=(markets%20OR%20stocks%20OR%20economy%20OR%20inflation%20OR%20Fed%20OR%20ECB%20OR%20geopolitics%20OR%20oil)%20when%3A1h&hl=en-US&gl=US&ceid=US:en"
     }
 ]
 
@@ -43,6 +50,7 @@ def get_crypto_news():
                     all_news.append(
                         f"<span style='color: #CC6600;'>🗞️  {title} - {source['name']} </span>"
                     )
+
         except Exception as e:
             print(f"Erreur crypto {source['name']} : {e}")
 
@@ -53,11 +61,11 @@ def get_crypto_news():
     return " ".join(all_news[:15])
 
 
-# --- GÉNÈRE LA LIGNE 2 VIOLETTE ---
-def get_markets_news():
+# --- GÉNÈRE UNE LIGNE MARCHÉS VIOLETTE ---
+def get_markets_news(sources, language):
     all_news = []
 
-    for source in RSS_MARKETS_FR:
+    for source in sources:
         try:
             headers = {"User-Agent": "Mozilla/5.0"}
             response = requests.get(source["url"], headers=headers, timeout=5)
@@ -72,7 +80,7 @@ def get_markets_news():
                     )
 
         except Exception as e:
-            print(f"Erreur marchés : {e}")
+            print(f"Erreur marchés {language} : {e}")
 
     if not all_news:
         return None
@@ -80,8 +88,8 @@ def get_markets_news():
     return " ".join(all_news[:10])
 
 
-# --- MET À JOUR LES DEUX FICHIERS DU GIST ---
-def update_gist(crypto_content, markets_content):
+# --- MET À JOUR CRYPTO + MARCHÉS FR + MARCHÉS EN ---
+def update_gist(crypto_content, markets_fr, markets_en):
     if not GITHUB_TOKEN:
         print("❌ Aucun Token GitHub trouvé.")
         return
@@ -92,11 +100,16 @@ def update_gist(crypto_content, markets_content):
         }
     }
 
-    # Sécurité : si Google News échoue, on conserve
-    # le dernier news_markets.txt valide dans le Gist.
-    if markets_content:
+    # Conserve le dernier fichier FR valide si la récupération échoue
+    if markets_fr:
         files["news_markets.txt"] = {
-            "content": markets_content
+            "content": markets_fr
+        }
+
+    # Conserve le dernier fichier EN valide si la récupération échoue
+    if markets_en:
+        files["news_markets_en.txt"] = {
+            "content": markets_en
         }
 
     url = f"https://api.github.com/gists/{GIST_ID}"
@@ -127,6 +140,7 @@ if __name__ == "__main__":
     print("Extraction des actualités...")
 
     crypto = get_crypto_news()
-    markets = get_markets_news()
+    markets_fr = get_markets_news(RSS_MARKETS_FR, "FR")
+    markets_en = get_markets_news(RSS_MARKETS_EN, "EN")
 
-    update_gist(crypto, markets)
+    update_gist(crypto, markets_fr, markets_en)
